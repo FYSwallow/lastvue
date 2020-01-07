@@ -203,8 +203,6 @@ export default {
                 padding: 0 10px;
                 line-height: 40px;
                 background-color: #fff;
-                .detail-left {
-                }
             }
         }
         .get-product-address {

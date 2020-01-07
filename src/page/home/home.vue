@@ -60,7 +60,9 @@
                     <van-swipe-item v-for="(item, index) in foodTypes" :key="index">
                         <ul class="clear">
                             <li class="list-style" v-for="value in item" :key="value.id">
-                                <router-link to="/food">
+                                <router-link
+                                    :to="{path: '/food', query: {geohash, title: value.title, restaurant_category_id: getCategoryId(value.link)}}"
+                                >
                                     <img :src="imgBaseUrl + value.image_url" />
                                     <span>{{value.title}}</span>
                                 </router-link>
@@ -76,30 +78,32 @@
             v-if="foodTypes.length"
             ref="food"
         >
-            <v-food @changeStyle="changeStyle"></v-food>
+            <v-food @changeStyle="changeStyle">
+                <h3 slot="shopTitle" class="shop-title">—— 推荐商家 ——</h3>
+            </v-food>
         </section>
-        <ul>
-            <li v-for="item in 40" :key="item">1</li>
-        </ul>
-        <!-- <div class="loading">
-            <van-loading type="spinner" color="#1989fa" class="loading-animate" v-show="loading"/>
-        </div>-->
+        <v-shoplist v-if="cityInfo" class="shoplist" :loadMoreFlag="loadMoreFlag"/>
+        <v-footer />
+        <van-overlay :show="showCover" @click="closeCover" />
     </div>
 </template>
 
 <script>
 import { mapState, mapActions } from "vuex";
 import vFood from "@/components/food/food";
-import { reqCurrentPosition, reqHotCity, msiteFoodTypes } from "@/api/index";
-import { type } from "os";
+import vShoplist from "@/components/shoplist/shoplist";
+import vFooter from "@/components/footer/footer";
+import { reqCurrentPosition, reqDetailPosition, reqHotCity, msiteFoodTypes } from "@/api/index";
 export default {
     components: {
-        vFood
+        vFood,
+        vShoplist,
+        vFooter
     },
     data() {
         return {
             positionStatus: "absolute", //定位fixed或者relatives
-            showStatus: true, //是否显示高度
+            showStatus: true, //是否定位元素显示高度
             show: true,
             positionText: "正在定位...",
             imgBaseUrl: "https://fuss10.elemecdn.com", //图片域名地址
@@ -108,34 +112,50 @@ export default {
             loading: true, //默认不显示
             foodPosition: "relative",
             categoryNavheight: 0, //分类导航栏的位置
-            typeFlag: false //根据类名判断分类标签的样式
+            topNavheight: "", //头部定位标签的高度
+            typeFlag: false, //根据类名判断分类标签的样式
+            showCover: false, //显示遮挡层
+            shopListHeight: "", // 食品列表的高度
+            loadMoreFlag: 0 //加载更多商品标志
         };
     },
     computed: {
-        ...mapState(["cityInfo"])
+        ...mapState(["cityInfo", "foodInfo"])
+    },
+    watch: {
+        foodInfo: function(newval) {
+            // 判断遮挡层是否显示,当分类存在状态时才显示,否则不显示
+            const { sortBy } = newval;
+            if (sortBy) {
+                this.showCover = true;
+            } else {
+                this.showCover = false;
+            }
+        }
     },
     mounted() {
         this.initData();
     },
     methods: {
-        ...mapActions(["getCityInfo"]),
+        ...mapActions(["getCityInfo", "getFoodInfo"]),
         initData() {
             if (this.cityInfo) {
                 this.positionText = this.cityInfo.name;
-
                 this.geohash =
                     this.cityInfo.latitude + "," + this.cityInfo.longitude;
-
                 this.getFoodTypesArr(this.geohash);
             }
         },
         //滚动触发事件
         handleScroll() {
             // 获取定位元素的高度
-            const height = this.$refs.positionTop.offsetHeight;
+            if (!this.topNavheight) {
+                this.topNavheight = this.$refs.positionTop.offsetHeight;
+            }
             //获取页面滚动出去的高度
             const scrollTop = this.$refs.home.scrollTop;
-            if (scrollTop > height) {
+            const scrollHeight = this.$refs.home.scrollHeight;
+            if (scrollTop > this.topNavheight) {
                 this.positionStatus = "fixed";
                 this.showStatus = false;
             } else {
@@ -153,12 +173,17 @@ export default {
             } else {
                 this.typeFlag = false;
             }
+            // 当页面滚动至页面最底部时加载更多
+            if (document.body.clientHeight + scrollTop >= scrollHeight) {
+                this.loadMoreFlag++;
+            }
         },
         //获取当前城市地址
         async getCity() {
             this.positionText = "正在获取位置...";
             // 获取当前位置有点问题，使用热门城市代替
-            // const response = await reqCurrentPosition()
+            const responsedata = await reqDetailPosition()
+            console.log(responsedata)
             // this.positionText = response.name
             const response = await reqHotCity();
             const result = response.data[0];
@@ -187,17 +212,40 @@ export default {
             }
             this.foodTypes = foodArr;
         },
+        //点击排序按钮时对商品列表进行排序,筛选
         changeStyle() {
-            // 头部样式改变
-            this.positionStatus = "fixed";
-            this.showStatus = false;
+            // 保存页面初始状态信息
+            if (this.categoryNavheight == 0) {
+                this.categoryNavheight = this.$refs.food.offsetTop;
+            }
+            //当食品列表大于窗口可视区域高度时, food元素节点位置样式发生改变,变为绝对定位
             //分类样式改变
             this.typeFlag = true;
-            // 页面滚动到分类位置
-            this.$refs.home.scrollTop = this.$refs.food.offsetTop
+            // 页面滚动到分类位置,当两者完全相等时,会导致布局变为相对定位,故而加一
+            this.$refs.home.scrollTop = this.categoryNavheight + 1;
+        },
+        // 判断是否需要变化位置
+        getShoplistHeight(height) {
+            this.shopListHeight = height;
+        },
+        // 当点击遮挡层时,关闭食品下拉列表
+        closeCover() {
+            this.showCover = false;
+            this.getFoodInfo();
         },
         goCity() {
             this.$router.push("/address");
+        },
+        // 解码url地址，求去restaurant_category_id值
+        getCategoryId(url) {
+            let urlData = decodeURIComponent(
+                url.split("=")[1].replace("&target_name", "")
+            );
+            if (/restaurant_category_id/gi.test(urlData)) {
+                return JSON.parse(urlData).restaurant_category_id.id;
+            } else {
+                return "";
+            }
         }
     }
 };
@@ -207,7 +255,7 @@ export default {
 .home {
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow-y: auto;
     position: absolute;
     .position-nav {
         width: 100%;
@@ -276,6 +324,17 @@ export default {
         position: absolute;
         height: 100px;
         width: 100%;
+        z-index: 9;
+    }
+    .shop-title {
+        height: 50px;
+        line-height: 50px;
+        background-color: #fff;
+        text-align: center;
+    }
+    .shoplist {
+        padding-top: 100px;
+        padding-bottom: 50px;
     }
     .loading {
         position: absolute;
