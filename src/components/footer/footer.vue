@@ -1,9 +1,8 @@
 <template>
     <van-tabbar v-model="active">
-        <van-tabbar-item icon="home-o" to="/home">首页</van-tabbar-item>
-        <van-tabbar-item icon="search" dot to="/search">发现</van-tabbar-item>
-        <van-tabbar-item icon="balance-list-o" info="5" to="/blance">订单</van-tabbar-item>
-        <van-tabbar-item icon="setting-o" info="20" to="/user">我的</van-tabbar-item>
+        <van-tabbar-item icon="home-o" to="/home" name="/home">首页</van-tabbar-item>
+        <van-tabbar-item icon="balance-list-o" to="/order" name="/order">订单</van-tabbar-item>
+        <van-tabbar-item icon="setting-o" to="/user/main" name="/user/main">我的</van-tabbar-item>
     </van-tabbar>
 </template>
 
@@ -11,14 +10,14 @@
 export default {
     data() {
         return {
-            active: 0
+            active: this.$route.path
         };
-    },
-    methods: {
-
     }
 };
 </script>
 
-<style>
+<style lang="scss" scoped>
+.active {
+    color: #01a3f8;
+}
 </style>

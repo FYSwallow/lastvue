@@ -212,16 +212,13 @@ export default {
         // 初始化数据
         async initData() {
             const { latitude, longitude } = this.cityInfo;
-            const response = await foodCategory(latitude, longitude);
-            this.category = response.data;
+            this.category = await foodCategory(latitude, longitude);
 
             // 获取配送列表
-            const resDelivery = await foodDelivery(latitude, longitude);
-            this.delivery = resDelivery.data;
+            this.delivery = await foodDelivery(latitude, longitude);
 
             // 获取筛选列表
-            const resActivity = await foodActivity(latitude, longitude);
-            this.activity = resActivity.data;
+            this.activity = await foodActivity(latitude, longitude);
 
             //记录support_ids的状态，默认不选中，点击状态取反，status为true时为选中状态
             this.activity.forEach((item, index) => {
@@ -262,7 +259,6 @@ export default {
                 suffix;
             return "https://fuss10.elemecdn.com" + url;
         },
-
         //选中Category左侧列表的某个选项时，右侧渲染相应的sub_categories列表
         selectCategoryName(id, index) {
             if (index === 0) {

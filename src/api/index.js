@@ -81,8 +81,8 @@ export const foodActivity = (latitude, longitude) => ajax('/shopping/v1/restaura
 // 12.获取shop页面菜单列表
 
 
-export const foodMenu = restaurant_id => ajax('/shopping/v2/menu', {
-	restaurant_id
+export const foodMenu = () => ajax('/shopping/v2/menu', {
+	restaurant_id: 1
 })
 
 
@@ -95,3 +95,96 @@ export const getcaptchas = () => ajax('/v1/captchas', {}, 'POST');
 // 14.账号密码登录
 
 export const accountLogin = (username, password, captcha_code) => ajax('/v2/login', { username, password, captcha_code }, 'POST');
+
+// 15. 获取用户信息
+
+export const reqUserInfo = () => ajax('/v1/user');
+
+// 16. 添加用户收货地址
+
+export const addUserAddress = (addressDetail) => ajax(`/v1/users/${addressDetail.user_id}/addresses`, addressDetail, 'POST');
+
+// 16. 获取收货地址列表
+
+export const reqUserAddressList = (user_id) => ajax(`/v1/users/${user_id}/addresses`);
+
+// 17. 获取收货地址详情
+
+export const reqUserAddress = (address_id) => ajax(`/v1/addresse/${address_id}`);
+
+// 18. 修改收货地址
+
+export const editUserAddress = (addressDetail, address_id) => ajax(`/v1/editAddresse/${address_id}`, addressDetail, 'POST');
+
+
+// 19.修改用户名
+
+export const setUserName = (username) => ajax('/v1/users/12/username', { username }, 'POST')
+
+// 20.修改用户密码
+
+export const changePassword = (passwordInfo) => ajax('/v2/changepassword', passwordInfo, 'POST')
+
+// 21.确认订单
+export const checkout = (geohash, entities, shopid) => ajax('/v1/carts/checkout', {
+	come_from: "web",
+	geohash,
+	entities,
+	restaurant_id: shopid,
+}, 'POST');
+
+// 22.下订单
+export const placeOrders = (user_id, cart_id, address_id, description, entities, geohash, sig) => ajax('/v1/users/' + user_id + '/carts/' + cart_id + '/orders', {
+	address_id,
+	come_from: "mobile_web",
+	deliver_time: "",
+	description,
+	entities,
+	geohash,
+	paymethod_id: 1,
+	sig,
+}, 'POST');
+
+// 23.获取订单列表
+export const getOrderList = (user_id, offset) => ajax('/bos/v2/users/' + user_id + '/orders', {
+	limit: 10,
+	offset,
+});
+
+// 24.获取商铺评价列表
+ 
+
+export const getRatingList = (shopid, offset, tag_name = '') => ajax('/ugc/v2/restaurants/' + shopid + '/ratings', {
+	has_content: true,
+	offset,
+	limit: 10,
+	tag_name
+});
+
+
+// 25.获取商铺评价分数
+
+
+export const ratingScores = shopid => ajax('/ugc/v2/restaurants/' + shopid + '/ratings/scores');
+
+
+
+// 26.获取商铺评价分类
+
+
+export const ratingTags = shopid => ajax('/ugc/v2/restaurants/' + shopid + '/ratings/tags');
+
+// 27.获取商铺详情
+
+export const shopDetails = (shopid, latitude, longitude) => ajax('/shopping/restaurant/' + shopid, {
+	latitude,
+	longitude: longitude + '&extras[]=activities&extras[]=album&extras[]=license&extras[]=identification&extras[]=statistics'
+});
+
+// 28.搜索商店
+export const searchRestaurant = (geohash, keyword) => ajax('/v4/restaurants', {
+	'extras[]': 'restaurant_activity',
+	geohash,
+	keyword,
+	type: 'search'
+});

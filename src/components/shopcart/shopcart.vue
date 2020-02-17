@@ -3,11 +3,16 @@
         <div class="shopCart">
             <div class="content" @click.stop="toggleList()">
                 <div class="content-left">
-                    <div class="logo-wrapper" ref="num">
+                    <div class="logo-wrapper">
                         <div class="logo" :class="{'highlight': totalCount > 0}">
-                            <i class="fa fa-shopping-cart" :class="{'highlight': totalCount > 0}"></i>
+                            <van-icon
+                                name="shopping-cart-o"
+                                :class="{'highlight': totalCount > 0}"
+                            />
                         </div>
-                        <div class="num" v-show="totalCount > 0">{{totalCount}}</div>
+                        <div class="num" ref="num">
+                            <span v-show="totalCount">{{totalCount}}</span>
+                        </div>
                     </div>
                     <div class="price" :class="{'highlight': totalPrice > 0}">￥{{totalPrice}}</div>
                     <div class="desc">另需配送费￥{{deliveryPrice}}元</div>
@@ -21,7 +26,7 @@
                 </div>
             </div>
             <transition name="fade">
-                <div class="shopcart-list" v-show="listShow">
+                <div class="shopcart-list" v-show="listShow&&cartFoodList.length">
                     <div class="list-header">
                         <h1 class="title">购物车</h1>
                         <span class="empty" @click="empty">清空</span>
@@ -30,14 +35,14 @@
                         <ul>
                             <li
                                 class="shopcart-food"
-                                v-for="(food, index) in selectFood"
+                                v-for="(food, index) in cartFoodList"
                                 :key="index"
-                                v-show="food.count !== 0"
+                                v-show="food.num !== 0"
                             >
                                 <div class="name">{{food.name}}</div>
-                                <div class="price">￥{{20 * food.count}}</div>
+                                <div class="price">￥{{food.num * food.price}}</div>
                                 <div class="cartControl-wrapper">
-                                    <v-cartControl :food="food"></v-cartControl>
+                                    <v-cartControl :food="shopCartList[index]"></v-cartControl>
                                 </div>
                             </li>
                         </ul>
@@ -45,46 +50,31 @@
                 </div>
             </transition>
         </div>
-        <div class="ball-container">
-            <transition @before-enter="beforeEnter" @enter="enter" @after-enter="afterEnter">
-                <div class="ball" v-show="pos.ballFlag" ref="ball">
-                    <div class="inner inner-hook"></div>
-                </div>
-            </transition>
-        </div>
     </div>
 </template>
 <script>
+import { mapActions } from "vuex";
 import vCartControl from "@/components/cartControl/cartControl";
-import { mapMutations } from "vuex";
 export default {
-    props: ["selectFood", "pos"],
+    props: ["cartFoodList", "menuList"],
     data() {
         return {
             deliveryPrice: 5, //配送费
             minPrice: 30, //起步价
-            fold: true
+            fold: false,
+            listShow: false, //显示购物车
+            shopCartList: [], //购物车需要传入cartControl组件的数据
+            dotPosition: false // 判断是否存在点的位置，起始默认为false
         };
     },
+    mounted() {
+        this.$nextTick(() => {
+            let elLeft = this.$refs.num.getBoundingClientRect().left;
+            let elTop = this.$refs.num.getBoundingClientRect().top;
+            this.$emit("getEndDotPosition", { elLeft, elTop });
+        });
+    },
     computed: {
-        totalPrice() {
-            let total = 0;
-            this.selectFood.forEach(food => {
-                total += 20 * food.count;
-            });
-            return total;
-        },
-        totalCount() {
-            let count = 0;
-            this.selectFood.forEach(food => {
-                count += food.count;
-            });
-
-            return count;
-        },
-        slowCount() {
-            return this.minPrice - this.totalPrice;
-        },
         payClass() {
             if (this.totalPrice < this.minPrice) {
                 return "not-enough";
@@ -92,57 +82,73 @@ export default {
                 return "enough";
             }
         },
-        listShow() {
-            if (!this.totalCount) {
-                return false;
-            }
-            let show = !this.fold;
-            return show;
+        // 距离多少钱配送
+        slowCount() {
+            return this.minPrice - this.totalPrice;
+        },
+        // 获取总金额
+        totalPrice() {
+            let totalPrice = 0;
+            this.cartFoodList.forEach(item => {
+                totalPrice += item.num * item.price;
+            });
+            return totalPrice;
+        },
+
+        // 获取每件商品的数量
+        totalCount() {
+            let totalCount = 0;
+            this.cartFoodList.forEach(item => {
+                totalCount += item.num;
+            });
+            return totalCount;
         }
     },
+    watch: {
+        cartFoodList: function(newval) {
+            this.cartList(newval);
+        }
+    },
+
     methods: {
-        ...mapMutations(["SAVE_FOODS"]),
+        ...mapActions(["clearCart"]),
+        // 是否显示购物车
         toggleList() {
-            if (!this.totalCount) {
-                return;
-            }
-            this.fold = !this.fold;
+            this.listShow = this.cartFoodList.length
+                ? (this.showCartList = !this.showCartList)
+                : true;
         },
+        //清空购物车
         empty() {
-            this.selectFood.forEach(food => {
-                food.count = 0;
+            this.clearCart(this.cartFoodList[0].restaurant_id);
+        },
+
+        // 获取当前购物车数据
+        cartList(list) {
+            const shopCartList = [];
+            this.menuList.forEach(item1 => {
+                item1.foods.forEach(item2 => {
+                    list.forEach(item3 => {
+                        if (
+                            item2.restaurant_id == item3.restaurant_id &&
+                            item2.category_id == item3.category_id &&
+                            item2.item_id == item3.item_id &&
+                            item2.specfoods[0].food_id == item3.food_id
+                        ) {
+                            shopCartList.push(item2);
+                        }
+                    });
+                });
             });
+            this.shopCartList = shopCartList;
         },
+
+        // 确认订单
         goPay() {
-            // 将一个订单所拥有的数量和价钱保存为一个对象,存储到订单列表的最后一位
-            var date = new Date();
-            const atrObj = {
-                date,
-                name: this.$route.query.name,
-                totalCount: this.totalCount,
-                totalPrice: this.totalPrice,
-                foods: this.selectFood
-            };
-            this.SAVE_FOODS(atrObj);
-            this.$router.push("/confrimOrder");
-        },
-        beforeEnter(el) {
-            // 获取小球的 在页面中的位置
-            el.style.left = this.pos.posX + "px";
-            el.style.top = this.pos.posY + "px";
-            el.style.transform = "translate(0, 0)";
-        },
-        //小球动画
-        enter(el, done) {
-            const ballPosition = this.$refs.num.getBoundingClientRect();
-            const xDist = this.pos.posX - ballPosition.left;
-            const yDist = this.pos.posY - ballPosition.top;
-            el.style.transform = `translate(${-xDist}px, ${-yDist}px)`;
-            el.style.transition = "all 0.5s cubic-bezier(.4,-0.3,1,.68)";
-            done();
-        },
-        afterEnter() {
-            this.pos.ballFlag = !this.pos.ballFlag;
+            this.$router.push({
+                path: "/confirmOrder",
+                query: { restaurant_id: this.cartFoodList[0].restaurant_id }
+            });
         }
     },
     components: {
@@ -150,26 +156,25 @@ export default {
     }
 };
 </script>
-<style lang="scss">
-@mixin fj($type: space-between){
-	display: flex;
-	justify-content: $type;
-
+<style lang="scss" scoped>
+@mixin fj($type: space-between) {
+    display: flex;
+    justify-content: $type;
 }
-@mixin wh($width, $height){
-	width: $width;
-	height: $height;
+@mixin wh($width, $height) {
+    width: $width;
+    height: $height;
 }
 //字体大小、行高、字体
-@mixin font($size, $line-height, $family: 'Microsoft YaHei') {  
-	font: #{$size}/#{$line-height} $family;
+@mixin font($size, $line-height, $family: "Microsoft YaHei") {
+    font: #{$size}/#{$line-height} $family;
 }
 .shopCart {
     position: fixed;
     left: 0;
     bottom: 0;
     z-index: 50;
-    @include wh(100%, 48px);
+    @include wh(100%, 50px);
     .content {
         display: flex;
         background: #141d27;
@@ -179,8 +184,8 @@ export default {
                 display: inline-block;
                 position: relative;
                 top: -10px;
-                @include wh(56px, 56px);
-                margin: 0 12px;
+                @include wh(50px, 56px);
+                margin: 0 5px;
                 padding: 6px;
                 vertical-align: top;
                 border-radius: 50%;
@@ -189,14 +194,17 @@ export default {
                     position: absolute;
                     top: 0;
                     right: 0;
-                    @include wh(24px, 24px);
-                    border-radius: 16px;
-                    @include font(12px, 24px);
-                    text-align: center;
-                    font-weight: 700;
-                    color: #fff;
-                    background: rgb(240, 20, 20);
-                    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
+                    span {
+                        display: inline-block;
+                        @include wh(24px, 24px);
+                        border-radius: 16px;
+                        @include font(12px, 24px);
+                        text-align: center;
+                        font-weight: 700;
+                        color: #fff;
+                        background: rgb(240, 20, 20);
+                        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
+                    }
                 }
                 .logo {
                     @include wh(100%, 100%);
@@ -218,11 +226,9 @@ export default {
             }
             .price {
                 display: inline-block;
-                vertical-align: top;
-                margin-top: 12px;
-                padding-right: 12px;
+                padding: 0 8px;
+                @include font(16px, 48px);
                 border-right: 1px solid rgba(255, 255, 255, 0.1);
-                @include font(16px, 24px);
                 font-weight: 700;
                 color: rgba(255, 255, 255, 0.4);
                 &.highlight {
@@ -231,17 +237,16 @@ export default {
             }
             .desc {
                 display: inline-block;
-                margin-left: 12px;
-                margin-top: 12px;
-                @include font(12px, 24px);
-                vertical-align: top;
+                padding: 0 5px;
+                @include font(12px, 50px);
                 color: rgba(255, 255, 255, 0.4);
             }
         }
         .content-right {
-            width: 105px;
+            width: 80px;
             .pay {
                 height: 48px;
+                padding: 0 5px;
                 @include font(12px, 48px);
                 text-align: center;
                 font-weight: 700;
@@ -296,48 +301,29 @@ export default {
             overflow: auto;
             background: #fff;
             .shopcart-food {
-                position: relative;
-                padding: 12px 0;
-                box-sizing: border-box;
+                @include fj;
+                height: 30px;
                 border-bottom: 1px solid rgba(7, 17, 27, 0.1);
+                font-size: 14px;
+                div {
+                    line-height: 30px;
+                }
                 .name {
-                    float: left;
-                    font-size: 14px;
-                    line-height: 36px;
+                    display: inline-block;
+                    width: 20%;
                     color: rgb(7, 17, 27);
                 }
                 .price {
-                    float: right;
-                    position: absolute;
-                    right: 90px;
-                    bottom: 12px;
-                    @include font(14px, 36px);
+                    display: inline-block;
+                    width: 50%;
+                    text-align: center;
                     font-weight: 700;
                     color: rgb(240, 20, 20);
                 }
                 .cartControl-wrapper {
-                    position: relative;
-                    .cartControl {
-                        position: absolute;
-                        right: -10px;
-                        bottom: 3px;
-                        width: 100px;
-                    }
+                    display: inline-block;
                 }
             }
-        }
-    }
-}
-.ball-container {
-    .ball {
-        position: fixed;
-        z-index: 200;
-
-        .inner {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background-color: rgb(0, 160, 220);
         }
     }
 }

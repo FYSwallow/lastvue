@@ -1,7 +1,7 @@
 <template>
     <div class="login">
         <header class="header">
-            <div class="header-left">
+            <div class="header-left" @click="goback">
                 <van-icon name="arrow-left" />
                 <span>返回</span>
             </div>
@@ -51,20 +51,20 @@
                     @click="getCaptchaCode"
                 >获取验证码</van-button>
                 <div slot="button" class="captchacode" v-else>
-                    <img :src="captchaCodeImg" class="captchacode-img" />
-                    <span @click="getCaptchaCode" style="color: #01a3f8">看不清?</span>
+                    <img :src="captchaCodeImg" class="captchacode-img" @click="getCaptchaCode" />
                 </div>
             </van-field>
         </van-cell-group>
         <p class="login-tips">温馨提示: 为注册过的账号, 登录时将自动注册</p>
         <p class="login-tips">注册过的用户可凭账号密码登陆</p>
-        <button class="login-button" @click="mobileLogin">登录</button>
-        <router-link to="/forget" class="to-forget">重置密码?</router-link>
+        <button class="login-button" @click="captchaCodeLogin">登录</button>
+        <router-link to="/user/forget" class="to-forget">重置密码?</router-link>
         <van-dialog v-model="showAlert" title="提示" show-cancel-button :message="alertText"></van-dialog>
     </div>
 </template>
 
 <script>
+import { Notify } from "vant";
 import { mapActions } from "vuex";
 import { getcaptchas, accountLogin } from "@/api/index";
 
@@ -83,20 +83,22 @@ export default {
         };
     },
     mounted() {
-        // this.getCaptchaCode();
+        this.initData();
     },
     methods: {
         ...mapActions(["getUserInfo"]),
+
+        //  查看是否存在sid,如果存在,则通过cookies获取用户信息,如果获取失败,删除sid
+        initData() {},
         // 获取验证码
         async getCaptchaCode() {
-            let res = await getcaptchas();
-            this.captchaCodeImg = res.data.code;
+            this.captchaCodeImg = await getcaptchas();
         },
         //是否显示密码
         changePassWordType() {
             this.showPassword = !this.showPassword;
         },
-        async mobileLogin() {
+        async captchaCodeLogin() {
             if (!this.username) {
                 this.showAlert = true;
                 this.alertText = "请输入手机号/邮箱/用户名";
@@ -111,24 +113,34 @@ export default {
                 return;
             }
             // 用户名登录
-            const res = await accountLogin(
+            const userInfo = await accountLogin(
                 this.username,
                 this.password,
                 this.sms
             );
-            console.log(res.data);
 
-            if (res.message) {
-                Dialog.alert({
-                    message: res.message
-                }).then(() => {
-                    // on close
+            if (!userInfo.user_id) {
+                Notify({
+                    type: "danger",
+                    message: "请检查密码和用户名是否匹配"
                 });
+                return;
+            } else {
+                // 将userInfo保存至全局状态管理
+                this.getUserInfo(userInfo);
+                Notify({
+                    type: "success",
+                    message: "登陆成功",
+                    duration: 1000
+                });
+                setTimeout(() => {
+                    // 跳转路由
+                    this.$router.go(-1);
+                }, 1000);
             }
-            // this.$router.push("/user");
         },
-        closeTip() {
-            this.showAlert = false;
+        goback() {
+            this.$router.go(-1);
         }
     }
 };
@@ -186,10 +198,9 @@ export default {
             }
         }
         .captchacode {
+            height: 30px;
             .captchacode-img {
-                width: 60px;
-                height: 24px;
-                vertical-align: middle;
+                width: 100%;
             }
         }
     }

@@ -75,7 +75,7 @@ export default {
     .food-nav {
         position: fixed;
         top: 0;
-        z-index: 10;
+        z-index: 12;
         .food-title {
             height: 50px;
             width: 100%;

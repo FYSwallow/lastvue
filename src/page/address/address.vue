@@ -1,7 +1,7 @@
 <template>
     <div class="address">
         <header class="search">
-            <div class="search-left">
+            <div class="search-left" @click="goCityList">
                 <span>{{positionDetail}}</span>
                 <van-icon name="play" style="transform: rotate(90deg)" class="icon" />
             </div>
@@ -23,29 +23,30 @@
                     <span>当前地址</span>
                 </div>
                 <div class="current-position-detail">
-                    <div class="detail-left">
-                        <span>万和小区</span>
+                    <div class="detail-left ellipsis">
+                        <span>{{currentPosition}}</span>
                     </div>
                     <div class="detail-right">
-                        <van-icon
-                            name="aim"
-                            style="transform: translate(-2px, 2px); color: #01a3f8"
-                        />
-                        <span>重新定位</span>
+                        <van-icon name="aim" color="#01a3f8" class="icon-position" />
+                        <span @click="getPosition">重新定位</span>
                     </div>
                 </div>
             </div>
             <div class="get-product-address">
                 <div class="title">收货地址</div>
                 <ul class="address-group">
-                    <li class="address-list">
+                    <li
+                        class="address-list"
+                        v-for="(item, index) in getFoodAddressList"
+                        :key="index"
+                    >
                         <div class="list-top">
-                            <span class="name">付月</span>
-                            <span class="gender">先生</span>
-                            <span class="telphone">15226511191</span>
+                            <span class="name">{{item.name}}</span>
+                            <span class="gender">{{item.sex == 1 ? "女士" : "先生"}}</span>
+                            <span class="telphone">{{item.phone}}</span>
                         </div>
                         <div class="list-bottom">
-                            <span class="address-detail">万和小区</span>
+                            <span class="address-detail">{{item.address}}</span>
                         </div>
                     </li>
                 </ul>
@@ -79,7 +80,14 @@
 
 <script>
 import { mapActions, mapState } from "vuex";
-import { currentCity, searchplace } from "@/api/index";
+import {
+    currentCity,
+    searchplace,
+    reqDetailPosition,
+    reqUserAddressList
+} from "@/api/index";
+import { Dialog } from "vant";
+
 export default {
     data() {
         return {
@@ -90,11 +98,14 @@ export default {
             searchCityList: [], //搜索地区列表
             latitude: "",
             longitude: "",
-            selectPosition: null //选择的城市
+            selectPosition: null, //选择的城市
+            currentPosition: "定位不准",
+            searchStatus: false,
+            getFoodAddressList: [] //收货地址列表
         };
     },
     computed: {
-        ...mapState(["cityInfo"])
+        ...mapState(["cityInfo", "userInfo"])
     },
     mounted() {
         this.initData();
@@ -102,19 +113,29 @@ export default {
     methods: {
         ...mapActions(["getCityInfo"]),
         //数据初始化
-        initData() {
+        async initData() {
             const cityInfo = this.cityInfo;
+
             this.cityid = cityInfo.id;
             this.positionDetail = cityInfo.name;
             this.latitude = cityInfo.latitude;
             this.longitude = cityInfo.longitude;
+
+            if (cityInfo.address) {
+                this.currentPosition = cityInfo.address;
+            }
+
+            // 获取用户收获地址
+            this.getFoodAddress();
         },
         // 根据输入的内容获取具体地址
         async onSearch() {
             const inputValue = this.value.trim();
             if (inputValue) {
-                const response = await searchplace(this.cityid, inputValue);
-                this.searchCityList = response.data;
+                this.searchCityList = await searchplace(
+                    this.cityid,
+                    inputValue
+                );
                 this.searchCityList.forEach(item => {
                     this.getDistance(item);
                 });
@@ -156,13 +177,44 @@ export default {
                 item.distance = paramStr + "m";
             }
 
-            this.searchShow = true
+            this.searchShow = true;
         },
         //选择城市
         choosePosition(city) {
             this.positionDetail = city.name;
             this.getCityInfo(city);
             this.$router.push("/home");
+        },
+
+        //重新定位
+        async getPosition() {
+            this.searchStatus = true;
+            this.currentPosition = "正在定位";
+            const response = await reqDetailPosition();
+            this.getCityInfo(response);
+            this.searchStatus = false;
+            this.positionDetail = response.name;
+            this.currentPosition = response.address;
+        },
+
+        //搜索城市列表
+        goCityList() {
+            this.$router.push("/city");
+        },
+
+        // 获取收货地址
+        async getFoodAddress() {
+            if (!this.userInfo) {
+                Dialog.confirm({
+                    message: "还未登陆,是否前去登陆?"
+                }).then(() => {
+                    this.$router.push("/login");
+                });
+            } else {
+                this.getFoodAddressList = await reqUserAddressList(
+                    this.userInfo.user_id
+                );
+            }
         }
     }
 };
@@ -203,6 +255,18 @@ export default {
                 padding: 0 10px;
                 line-height: 40px;
                 background-color: #fff;
+                .detail-left {
+                    width: 50%;
+                }
+                .detail-right {
+                    position: relative;
+                    .icon-position {
+                        position: absolute;
+                        top: 30%;
+                        left: -20px;
+                        transition: all 0.3 ease;
+                    }
+                }
             }
         }
         .get-product-address {

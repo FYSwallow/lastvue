@@ -5,7 +5,7 @@
                 class="shop-list-item"
                 v-for="(item, index) in shopListArr"
                 :key="index"
-                :to="{path: '/shop', query:{geohash, id: item.id, name: item.name}}"
+                :to="{path: '/shop', query:{ id: item.id }}"
                 tag="li"
             >
                 <img :src="imgBaseUrl + item.image_path" />
@@ -68,17 +68,16 @@
 </template>
 
 <script>
-import { mapState } from "vuex";
+import { mapState, mapMutations } from "vuex";
 import { shopList } from "@/api/index";
 export default {
     props: ["loadMoreFlag"],
     data() {
         return {
-            geohash: "",
             offset: 0, // 批次加载店铺列表，每次加载20个 limit = 20
             shopListArr: [], // 店铺列表数据
             preventRepeatReuqest: false, //到达底部加载数据，防止重复加载
-            imgBaseUrl: "//elm.cangdu.org/img/", //
+            imgBaseUrl: "/api/img/", //
             showLoading: true, //显示加载动画
             touchend: false, //没有更多数据
             clientHeight: "" //获取当前组件的高度,判断是否需要调整主界面的布局
@@ -88,7 +87,7 @@ export default {
         this.initData();
     },
     computed: {
-        ...mapState(["cityInfo", "foodInfo"])
+        ...mapState(["cityInfo", "foodInfo", "geohash"])
     },
     watch: {
         foodInfo: function(newval, oldval) {
@@ -120,8 +119,8 @@ export default {
                     delivery_mode,
                     supportIds
                 ).then(res => {
-                    this.shopListArr = res.data;
-                    if (res.data.length < 20) {
+                    this.shopListArr = res;
+                    if (res.length < 20) {
                         this.touchend = true;
                     }
                 });
@@ -162,9 +161,9 @@ export default {
                 delivery_mode,
                 supportIds
             ).then(res => {
-                this.shopListArr = [...this.shopListArr, ...res.data];
+                this.shopListArr = [...this.shopListArr, ...res];
                 //当获取数据小于20，说明没有更多数据，不需要再次请求数据
-                if (res.data.length < 20) {
+                if (res.length < 20) {
                     this.touchend = true;
                     return;
                 }
@@ -176,10 +175,8 @@ export default {
         async initData() {
             // 获取商家列表
             const { latitude, longitude } = this.cityInfo;
-            this.geohash = latitude + longitude;
-            const res = await shopList(latitude, longitude, this.offset);
-            this.shopListArr = res.data;
-            if (res.data.length < 20) {
+            this.shopListArr = await shopList(latitude, longitude, this.offset);
+            if (this.shopListArr.length < 20) {
                 this.touchend = true;
             }
             this.clientHeight = document.body.clientHeight + "px";

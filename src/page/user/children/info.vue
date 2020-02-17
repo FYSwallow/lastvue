@@ -1,66 +1,61 @@
 <template>
     <div>
-        <Header headTitle="账户信息" goBack = 'true'></Header>
-        <div class="user_info">
-            <div class="user_info_item item_first">
-                <input type="file" ref="user_avactor" @change="uploadAvatar">
-                <h3 class="item_head">头像</h3>
-                <div class="item_detail">
-                    <p><img :src="avactor" class="head_avactor"><span class="fa fa-angle-right"></span></p>    
+        <div class="user-info">
+            <div class="user-info-item item-first">
+                <input type="file" ref="userAvactor" @change="uploadAvatar" />
+                <h3 class="item-head">头像</h3>
+                <div class="item-detail">
+                    <p>
+                        <img :src="imgBaseUrl + userInfo.avatar" class="head-avactor" />
+                        <van-icon name="arrow" />
+                    </p>
                 </div>
             </div>
-            <router-link  class="user_info_item" to="/user/info/setusername" tag="div">
-                <h3 class="item_head">用户名</h3>
-                <div class="item_detail">
-                    <p>{{username}}<span class="fa fa-angle-right"></span></p>        
+            <router-link class="user-info-item" to="/user/setusername" tag="div">
+                <h3 class="item-head">用户名</h3>
+                <div class="item-detail">
+                    <p>
+                        {{username}}
+                        <van-icon name="arrow" />
+                    </p>
                 </div>
             </router-link>
-            <router-link  class="user_info_item" to="/user/info/address" tag="div">
-                <h3 class="item_head">收货地址</h3>
-                <div class="item_detail">
-                    <span class="fa fa-angle-right"></span>
+            <router-link class="user-info-item" to="/user/editAddress" tag="div">
+                <h3 class="item-head">收货地址</h3>
+                <div class="item-detail">
+                    <van-icon name="arrow" />
                 </div>
             </router-link>
-            <div class="user_info_head">
-                账号绑定
-            </div>
-            <section  class="user_info_item" @click="showTip">
-                <h3 class="item_head">
-                    <img src="@/assets/images/tel_logo.png">
+            <div class="user-info-head">账号绑定</div>
+            <section class="user-info-item" @click="showTip">
+                <h3 class="item-head">
+                    <img src="@/assets/images/tel_logo.png" />
                     <span>手机</span>
                 </h3>
-                <div class="item_detail">
-                    <span class="fa fa-angle-right"></span>
+                <div class="item-detail">
+                    <van-icon name="arrow" />
                 </div>
             </section>
-            <div class="user_info_head">
-                账号绑定
-            </div>
-            <router-link  class="user_info_item" to="/forget" tag="div">
-                <h3 class="item_head">登录密码</h3>
-                <div class="item_detail">
-                    <p>修改<span class="fa fa-angle-right"></span></p>
+            <div class="user-info-head">账号绑定</div>
+            <router-link class="user-info-item" to="/user/forget" tag="div">
+                <h3 class="item-head">登录密码</h3>
+                <div class="item-detail">
+                    <p>
+                        修改
+                        <van-icon name="arrow" />
+                    </p>
                 </div>
             </router-link>
             <button class="exit" @click="exitlogin">退出登录</button>
-            <div class="back_over" v-show="show"></div>
-            <div class="choose_exit" v-show="show">
-                <img src="images/avactor.jpg" alt="" class="exit_logo">
-                <h3 class="exit_title">是否退出登录</h3>
-                <div class="choose">
-                    <button class="exit_wait" @click="waitingThing">再等等</button>
-                    <button class="exit_login" @click="outLogin">退出登录</button>
-                </div>
-            </div>
+            <van-dialog v-model="show" title="标题" show-cancel-button message="是否确认退出" @confirm="outLogin">
+            </van-dialog>
         </div>
-        <AlertTip :alertText="alertText" @closeTip="closeTip" v-if="showAlert"></AlertTip>
     </div>
 </template>
 
 <script>
-import {mapState, mapMutations} from 'vuex'
-import Header from '@/common/header/header'
-import AlertTip from '@/common/alertTip/alertTip'
+import { mapState, mapActions } from "vuex";
+import { getUserInfo } from "@/api/index";
 export default {
     data() {
         return {
@@ -68,96 +63,100 @@ export default {
             show: false,
             showAlert: false, //显示提示组件
             alertText: null, //提示的内容
-        }
+            imgBaseUrl: "/api/img/" //图片地址
+        };
     },
     created() {
-        if(!this.userInfo){
-            this.$router.replace('/login')
+        if (!this.userInfo) {
+            this.$router.replace("/login");
         }
-        this.initData()
+        this.initData();
     },
     computed: {
-        ...mapState(
-            ['userInfo', 'avactor']
-        )
+        ...mapState(["userInfo", "avactor"])
     },
-    methods: {
-        ...mapMutations(
-            ['OUT_LOGIN']
-        ),
-        initData() {
-            if(this.userInfo.username){
-                this.username = this.userInfo.username
-            }else {
-                this.username = this.userInfo.phoneNumber
-            }   
-        },
-        uploadAvatar() {
-            let input = this.$refs.user_avactor
-            // let data = new FormData()
-            // data.append('file', input.files[0])
-            // try{
-                
-            // }catch {
-
-            // }
-            // 通过提交data数据,返回服务器的数据，再将服务器传递过来的图片赋值给avactor
-        },
-        exitlogin() {
-            this.show=true
-        },
-        waitingThing(){
-            this.show=false
-        },
-        outLogin() {
-            this.OUT_LOGIN()
-            this.$router.go(-1)
-        },
-        showTip(){
-            this.showAlert = true;
-            this.alertText = '请在手机APP中设置';
-        },
-        closeTip(){
-            this.showAlert = false
+    watch: {
+        userInfo: function() {
+            this.initData();
         }
     },
-    components: {
-        Header,
-        AlertTip
+    methods: {
+        ...mapActions(["getUserInfo"]),
+        async initData() {
+            if (this.userInfo.username) {
+                this.username = this.userInfo.username;
+            } else {
+                this.username = this.userInfo.phoneNumber;
+            }
+        },
+        async uploadAvatar() {
+            //上传头像
+            if (this.userInfo) {
+                let input = this.$refs.userAvactor;
+                let data = new FormData();
+                data.append("file", input.files[0]);
+                try {
+                    let response = await fetch(
+                        "/api/eus/v1/users/" +
+                            this.userInfo.user_id +
+                            "/avatar",
+                        {
+                            method: "POST",
+                            credentials: "include",
+                            body: data
+                        }
+                    );
+                    let res = await response.json();
+                    if (res.status == 1) {
+                        this.userInfo.avatar = res.image_path;
+                    }
+                } catch (error) {
+                    this.showAlert = true;
+                    this.alertText = "上传失败";
+                    throw new Error(error);
+                }
+            }
+        },
+        exitlogin() {
+            this.show = true;
+        },
+        outLogin() {
+            this.getUserInfo();
+            this.$router.go(-1);
+        },
     }
-}
+};
 </script>
 
 <style lang="scss" scoped>
-.user_info {
-    padding-top: 45px;
-    .user_info_item {
+.user-info {
+    .user-info-item {
         background-color: #fff;
         display: flex;
         justify-content: space-between;
         align-items: center;
         height: 50px;
-        padding: 0 10px; 
-        border-bottom : 1px solid #ccc;
-        &.item_first{
+        padding: 0 10px;
+        border-bottom: 1px solid #ccc;
+        &.item-first {
             margin-top: 10px;
             height: 80px;
             position: relative;
-            border-top : 1px solid #ccc;
+            border-top: 1px solid #ccc;
             input {
                 position: absolute;
                 width: 100%;
                 height: 100%;
                 opacity: 0;
             }
-            .head_avactor {
+            .head-avactor {
                 width: 60px;
                 height: 60px;
-                vertical-align: middle ;
+                vertical-align: middle;
                 border-radius: 30px;
             }
         }
-        .item_head {
+        .item-head {
             font-size: 16px;
             font-weight: normal;
             img {
@@ -168,81 +167,30 @@ export default {
                 margin-right: 5px;
             }
         }
-        .item_detail {
+        .item-detail {
             font-size: 18px;
             color: #999;
             font-weight: 600;
             span {
                 margin-left: 10px;
             }
-            
         }
     }
-    .user_info_head {
-        border-bottom : 1px solid #ccc;
-        height: 40px; 
-        line-height: 40px;  
+    .user-info-head {
+        border-bottom: 1px solid #ccc;
+        height: 40px;
+        line-height: 40px;
         padding-left: 10px;
     }
     .exit {
         width: 95%;
         height: 40px;
         margin: 30px 10px 0;
-        background-color: #D8584A;
+        background-color: #ee0a24;
         color: #fff;
         font-size: 18px;
         border: none;
         border-radius: 5px;
     }
-    .back_over {
-       width: 100%;
-        height: 100%;
-        position: fixed;
-        top: 0;
-        // z-index: 10;
-        background-color: rgba(0, 0, 0, 0.3);
-    }
-    .choose_exit {
-        width: 94%;
-        background-color: #fff;
-        padding: 17px;
-        position: absolute;
-        top: 20%;
-        left: 3%;
-        border-radius: 5px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        .exit_logo {
-            width: 100px;
-            height: 100px;
-            margin: 10px;
-        }
-        .exit_title {
-            font-size: 30px;
-            margin: 10px;
-            font-weight: normal;
-            color: #333;
-        }
-        .choose {
-            width: 100%;
-            text-align: center;
-            button {
-                width: 30%;
-                height: 40px;
-                margin: 10px;
-                border: none;
-                border-radius: 5px;
-                font-size: 18px;
-                color: #fff;
-            }
-            .exit_wait {
-                background-color: #999;
-            }
-            .exit_login {
-                background-color: #D8584A;
-            }
-        }
-    }
-}   
+}
 </style>

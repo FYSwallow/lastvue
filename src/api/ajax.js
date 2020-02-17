@@ -6,8 +6,7 @@ import axios from 'axios'
 const BASE_URL = '/api'
 
 export default async function ajax(url, data = {}, type = 'GET') {
-
-	let result
+	let response
 	if (type === 'GET') {
 		// 准备url query参数数据
 		let dataStr = '' //数据拼接字符串
@@ -19,12 +18,17 @@ export default async function ajax(url, data = {}, type = 'GET') {
 			url = url + '?' + dataStr
 		}
 		// 发送get请求
-		result = await axios.get(BASE_URL + url)
+		response = await axios.get(BASE_URL + url)
 	} else {
 		// 发送post请求
-		result = await axios.post(BASE_URL + url, data)
+		response = await axios.post(BASE_URL + url, data)
 	}
-	return result
+	const result = response.data
+	if (result.status == 1) {
+		return result.data
+	} else {
+		return result.message
+	}
 }
 
 /*

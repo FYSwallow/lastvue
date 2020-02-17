@@ -12,14 +12,19 @@
             ></van-dialog>
         </div>
         <header class="position-nav" :style="{position: positionStatus}">
-            <div class="position-top" v-show="showStatus" ref="positionTop" @click="goCity">
+            <div
+                class="position-top ellipsis"
+                v-show="showStatus"
+                ref="positionTop"
+                @click="goCity"
+            >
                 <van-icon name="location" class="icon" />
-                <span>{{ positionText}}</span>
+                <span>{{positionText}}</span>
                 <van-icon name="play" style="transform: rotate(90deg)" class="icon" />
             </div>
             <div class="position-bottom">
                 <van-icon name="search" style="transform: translateY(2px)" />
-                <span>搜索商家、商品名称</span>
+                <router-link to="/search" tag="span" >搜索商家、商品名称</router-link>
             </div>
         </header>
         <section class="slider-container">
@@ -82,7 +87,7 @@
                 <h3 slot="shopTitle" class="shop-title">—— 推荐商家 ——</h3>
             </v-food>
         </section>
-        <v-shoplist v-if="cityInfo" class="shoplist" :loadMoreFlag="loadMoreFlag"/>
+        <v-shoplist v-if="cityInfo" class="shoplist" :loadMoreFlag="loadMoreFlag" />
         <v-footer />
         <van-overlay :show="showCover" @click="closeCover" />
     </div>
@@ -93,7 +98,12 @@ import { mapState, mapActions } from "vuex";
 import vFood from "@/components/food/food";
 import vShoplist from "@/components/shoplist/shoplist";
 import vFooter from "@/components/footer/footer";
-import { reqCurrentPosition, reqDetailPosition, reqHotCity, msiteFoodTypes } from "@/api/index";
+import {
+    reqCurrentPosition,
+    reqDetailPosition,
+    reqHotCity,
+    msiteFoodTypes
+} from "@/api/index";
 export default {
     components: {
         vFood,
@@ -140,7 +150,7 @@ export default {
         ...mapActions(["getCityInfo", "getFoodInfo"]),
         initData() {
             if (this.cityInfo) {
-                this.positionText = this.cityInfo.name;
+                this.positionText = this.cityInfo.address;
                 this.geohash =
                     this.cityInfo.latitude + "," + this.cityInfo.longitude;
                 this.getFoodTypesArr(this.geohash);
@@ -181,14 +191,13 @@ export default {
         //获取当前城市地址
         async getCity() {
             this.positionText = "正在获取位置...";
-            // 获取当前位置有点问题，使用热门城市代替
-            const responsedata = await reqDetailPosition()
-            console.log(responsedata)
-            // this.positionText = response.name
-            const response = await reqHotCity();
-            const result = response.data[0];
-
-            this.positionText = result.name;
+            const result = await reqDetailPosition();
+            if (!result.address) {
+                this.positionText = "定位不准,请重新获取";
+                return;
+            } else {
+                this.positionText = result.address;
+            }
 
             this.geohash = result.latitude + "," + result.longitude;
             //获取食品分类列表
@@ -198,11 +207,9 @@ export default {
             // 保存到vuex中
             this.getCityInfo(result);
         },
-
         //获取食品分类列表
         async getFoodTypesArr(geohash) {
-            const response = await msiteFoodTypes(geohash);
-            const result = response.data;
+            const result = await msiteFoodTypes(geohash);
 
             let resLength = result.length;
             let resArr = [...result]; // 返回一个新的数组
@@ -264,7 +271,7 @@ export default {
         z-index: 10;
         .position-top {
             height: 30px;
-            width: 100%;
+            max-width: 50%;
             line-height: 30px;
             color: #fff;
             span {
