@@ -23,12 +23,7 @@ export default async function ajax(url, data = {}, type = 'GET') {
 		// 发送post请求
 		response = await axios.post(BASE_URL + url, data)
 	}
-	const result = response.data
-	if (result.status == 1) {
-		return result.data
-	} else {
-		return result.message
-	}
+	return response
 }
 
 /*

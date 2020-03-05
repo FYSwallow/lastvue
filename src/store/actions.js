@@ -2,6 +2,7 @@ import {
     GET_USER,
     GET_CITY_INFO,
     GET_FOOD_INFO,
+    GET_ADDRESS_INFO,
     GET_FOOD_ADDRESS,
     ADD_CART,
     CHOOSE_ADDRESS
@@ -15,9 +16,13 @@ const actions = {
         }
         commit(GET_USER, userInfo)
     },
-    // 获取用户信息
+    // 获取城市信息
     getCityInfo({ commit }, cityInfo) {
         commit(GET_CITY_INFO, cityInfo)
+    },
+    // 获取地址信息
+    getAddressInfo({ commit }, location) {
+        commit(GET_ADDRESS_INFO, location)
     },
     // 获取食品选择分类信息
     getFoodInfo({ commit }, foodInfo) {

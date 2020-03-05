@@ -67,7 +67,10 @@ export default {
     methods: {
         //获取验证吗
         async getCaptchaCode() {
-            this.captchaCodeImg = await getcaptchas();
+            const result = await getcaptchas();
+            if(result.data.status === 1) {
+                this.captchaCodeImg = result.data.code
+            }
         },
         //重置密码
         async resetButton() {
@@ -109,7 +112,11 @@ export default {
                 newpassword: this.newpassword,
                 confirmpassword: this.confirmpassword,
                 captcha_code: this.captcha_code
-            });
+            }, );
+            if(res.data.status === 1) {
+                Toast.success('修改密码成功')
+                this.$router.push('/user')
+            }
         }
     }
 };

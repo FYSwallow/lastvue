@@ -114,18 +114,20 @@ export default {
         ...mapActions(["getFoodAddress"]),
         async initData() {
             const {address_id} = this.$route.query;
+            console.log(this.$route.query)
             const { user_id } = this.userInfo;
             // 当路由中存在address_id时,此时为修改用户地址,需要重新获取用户守护地址数据
             if (address_id) {
                 this.status = false;
                 const result = await reqUserAddress(address_id);
-                this.name = result.name;
-                this.phone = result.phone;
-                this.address = result.address;
-                this.address_detail = result.address_detail;
-                this.sex = result.sex;
-                this.tag_type = result.tag_type;
-                this.tag = result.tag;
+                
+                this.name = result.data.name;
+                this.phone = result.data.phone;
+                this.address = result.data.address;
+                this.address_detail = result.data.address_detail;
+                this.sex = result.data.sex;
+                this.tag_type = result.data.tag_type;
+                this.tag = result.data.tag;
             }
         },
         // 获取地址
@@ -144,6 +146,7 @@ export default {
         },
         // 保存或者修改地址
         async saveAddress() {
+            console.log(this.userInfo)
             const { user_id } = this.userInfo;
 
             const paramObj = {
@@ -157,12 +160,12 @@ export default {
                 tag: this.tag
             };
             if (this.status) {
-                const { latitude, longitude } = this.cityInfo;
+                const { latitude, longitude } = this.addressDetail.address;
                 const geohash = latitude + "," + longitude;
                 const editAddressObj = Object.assign({}, paramObj, {
                     geohash
                 });
-                await addUserAddress(editAddressObj);
+                await addUserAddress(editAddressObj, user_id);
                 this.$router.push("/user/editAddress");
             } else {
                 const { address_id } = this.$route.query;

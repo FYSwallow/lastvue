@@ -3,6 +3,7 @@ import {
     GET_CITY_INFO,
     GET_FOOD_INFO,
     GET_FOOD_ADDRESS,
+    GET_ADDRESS_INFO,
     ADD_CART,
     CLEAR_CART,
     CHOOSE_ADDRESS,
@@ -19,9 +20,16 @@ const mutations = {
     },
     // 所在地址信息
     [GET_CITY_INFO](state, cityInfo) {
-        state.cityInfo = Object.assign({}, cityInfo);
+        state.cityInfo = cityInfo;
         // 所在地地址坐标
         state.geohash = cityInfo.latitude + ',' + cityInfo.longitude;
+    },
+
+    // 所在地址信息
+    [GET_ADDRESS_INFO](state, location) {
+        state.location =  location;
+        // 所在地地址坐标
+        state.geohash = location.latitude + ',' + location.longitude;
     },
 
     // 获取食品分类更新的信息

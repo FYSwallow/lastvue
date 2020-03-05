@@ -145,7 +145,7 @@
 
 <script>
 import { mapState, mapActions } from "vuex";
-import { foodCategory, foodDelivery, foodActivity } from "@/api/index";
+import { shopCategory, foodDelivery, foodActivity } from "@/api/index";
 export default {
     data() {
         return {
@@ -175,7 +175,7 @@ export default {
         };
     },
     computed: {
-        ...mapState(["cityInfo", "foodInfo"])
+        ...mapState(["foodInfo", "location"])
     },
     watch: {
         // 根据sortBy的值判断遮挡层是否显示
@@ -204,22 +204,25 @@ export default {
         }
     },
     mounted() {
-        this.geohash = this.cityInfo.latitude + "," + this.cityInfo.longitude;
+        this.geohash = this.location.latitude + "," + this.location.longitude;
         this.initData();
     },
     methods: {
         ...mapActions(["getFoodInfo"]),
         // 初始化数据
         async initData() {
-            const { latitude, longitude } = this.cityInfo;
-            this.category = await foodCategory(latitude, longitude);
+            const { latitude, longitude } = this.location;
+            const categoryRes = await shopCategory(latitude, longitude);
+            this.category = categoryRes.data
 
             // 获取配送列表
-            this.delivery = await foodDelivery(latitude, longitude);
-
+            const deliveryRes = await foodDelivery(latitude, longitude);
+            this.delivery = deliveryRes.data.data
+            console.log(this.delivery)
             // 获取筛选列表
-            this.activity = await foodActivity(latitude, longitude);
-
+            const activityRes = await foodActivity(latitude, longitude);
+            this.activity = activityRes.data
+            console.log(this.activity)
             //记录support_ids的状态，默认不选中，点击状态取反，status为true时为选中状态
             this.activity.forEach((item, index) => {
                 this.support_ids[index] = { status: false, id: item.id };

@@ -10,7 +10,7 @@
             <ul class="order-list-ul" ref="orderList">
                 <li class="order-list-li" v-for="(item, index) in orderList" :key="index">
                     <div class="list-left">
-                        <img src="@/assets/images/weixin.png" alt />
+                        <img :src="item.restaurant_image_url" alt />
                     </div>
                     <section class="list-right">
                         <header class="item-header">
@@ -93,7 +93,8 @@ export default {
             this.hideLoading();
 
             if (this.userInfo) {
-                this.orderList = await getOrderList(this.userInfo.id, 0);
+                const orderRes = await getOrderList(this.userInfo.id, 0);
+                this.orderList = orderRes.data
             } else {
                 Dialog.confirm({
                     message: "抱歉,你还没有登陆!是否前去登陆??"

@@ -48,12 +48,12 @@ export default {
         async initData() {
             // 获取当前定位城市
             const result = await reqCurrentPosition();
-            this.localCityName = result.name;
+            this.localCityName = result.data.name;
 
             const allCity = await reqCityGroup();
 
-            this.groupCity = this.sortgroupcity(allCity);
 
+            this.groupCity = this.sortgroupcity(allCity.data);
             this.indexList = Object.keys(this.groupCity);
         },
 

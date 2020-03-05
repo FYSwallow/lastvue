@@ -8,7 +8,8 @@ Vue.use(Vuex)
 const store = new Vuex.Store({
     state: {
         userInfo: null,
-        cityInfo: null, //用户位置信息
+        cityInfo: null, //用户所在城市位置信息
+        location: null, //用户所在地址详细信息
         geohash: '', //地址坐标
         foodInfo: {
             restaurant_category_id : '',

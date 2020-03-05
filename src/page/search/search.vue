@@ -98,10 +98,11 @@ export default {
         //搜索商店
         async search() {
             if (!this.inputValue.trim()) return;
-            this.restaurantList = await searchRestaurant(
+            const restaurantListRes = await searchRestaurant(
                 this.geohash,
                 this.inputValue
             );
+            this.restaurantList = restaurantListRes.data
             this.showflag = this.inputValue ? false : true;
             // 判断搜索历史中有无当前搜索内容,如果没有则保存
             let history = getStore("searchHistory");

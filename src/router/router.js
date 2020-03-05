@@ -106,6 +106,14 @@ const router = new Router({
                     }
                 },
                 {
+                    path: 'updateAddress',
+                    component: AddAddress,
+                    meta: {
+                        keepAlive: true,
+                        title: '更新地址'
+                    }
+                },
+                {
                     path: 'detailAddress',
                     component: DetailAddress,
                     meta: {
