@@ -560,13 +560,15 @@ export default {
                 }
                 .img-container {
                   width: 30%;
+                  height: 100px;
                   padding: 5px;
+                  position: relative;
+                  overflow: hidden;
                   .food-image {
                     width: 100%;
-                    height: 100%;
+                    height: 76px;
                   }
                   .attributes_ul {
-                    display: flex;
                     li {
                       font-size: 14px;
                       height: 16px;
@@ -585,15 +587,13 @@ export default {
                       top: 0;
                       left: 0;
                       background-color: #4cd964;
-                      display: flex;
-                      align-items: flex-end;
-                      transform: rotate(-45deg) translate(-0.1rem, -1.5rem);
+                      transform:translate(-30px, 10px) rotate(-45deg) ;
                       border: none;
                       border-radius: 0;
                       p {
                         text-align: center;
                         flex: 1;
-                        transform: scale(0.8) translate(0.1rem, -0.1rem);
+                        transform: scale(0.8);
                       }
                     }
                   }
